@@ -56,17 +56,25 @@ jobs:
             "${{ secrets.KEY_ALIAS }}"
           rm keystore.jks
 
-      - name: Sign APK
+      - name: Zipalign APK
+        run: |
+          BUILD_TOOLS=$(ls $ANDROID_HOME/build-tools | sort -V | tail -1)
+          echo "Using build-tools: $BUILD_TOOLS"
+          $ANDROID_HOME/build-tools/$BUILD_TOOLS/zipalign -v 4 \
+            android/app/build/outputs/apk/release/app-release-unsigned.apk \
+            android/app/build/outputs/apk/release/app-release-aligned.apk
+
+      - name: Sign APK with apksigner
         run: |
           echo "${{ secrets.SIGNING_KEY }}" | base64 -d > keystore.jks
-          jarsigner -verbose \
-            -storetype JKS \
-            -keystore keystore.jks \
-            -storepass "${{ secrets.KEY_STORE_PASSWORD }}" \
-            -keypass "${{ secrets.KEY_PASSWORD }}" \
-            -signedjar android/app/build/outputs/apk/release/app-release-signed.apk \
-            android/app/build/outputs/apk/release/app-release-unsigned.apk \
-            "${{ secrets.KEY_ALIAS }}"
+          BUILD_TOOLS=$(ls $ANDROID_HOME/build-tools | sort -V | tail -1)
+          $ANDROID_HOME/build-tools/$BUILD_TOOLS/apksigner sign \
+            --ks keystore.jks \
+            --ks-pass "pass:${{ secrets.KEY_STORE_PASSWORD }}" \
+            --key-pass "pass:${{ secrets.KEY_PASSWORD }}" \
+            --ks-key-alias "${{ secrets.KEY_ALIAS }}" \
+            --out android/app/build/outputs/apk/release/app-release-final.apk \
+            android/app/build/outputs/apk/release/app-release-aligned.apk
           rm keystore.jks
 
       - name: Upload AAB (Play Store)
@@ -80,5 +88,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: critcalc-apk-${{ github.run_number }}
-          path: android/app/build/outputs/apk/release/app-release-signed.apk
+          path: android/app/build/outputs/apk/release/app-release-final.apk
           retention-days: 30
