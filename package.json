@@ -1,0 +1,32 @@
+{
+  "name": "critcalc",
+  "version": "1.0.0",
+  "description": "CritCalc — ICU & Critical Care Calculator. Fully offline, no ads.",
+  "main": "index.js",
+  "scripts": {
+    "sync": "npx cap sync android",
+    "copy": "npx cap copy android",
+    "open": "npx cap open android",
+    "build:android": "cd android && ./gradlew bundleRelease"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/core": "^6.0.0",
+    "@fontsource/cairo": "^5.2.7",
+    "bootstrap-icons": "^1.13.1",
+    "mathjs": "^15.1.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.0.0"
+  },
+  "keywords": [
+    "medical",
+    "icu",
+    "calculator",
+    "critical-care",
+    "offline"
+  ],
+  "author": "Sherif Elgarhy",
+  "license": "UNLICENSED",
+  "private": true
+}

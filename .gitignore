@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Android build outputs
+android/app/build/
+android/.gradle/
+android/local.properties
+
+# Capacitor generated
+android/app/src/main/assets/public/
+
+# Keys — NEVER commit these
+*.jks
+*.keystore
+*.p12
+keystore.properties
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
