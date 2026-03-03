@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0d1f3c">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Clinical Calc">
+  <meta name="description" content="CritCalc — ICU & Critical Care Calculator · Fully Offline">
+  <title>CritCalc — ICU & Critical Care Calculator</title>
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Icons -->
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+
+  <!-- Bootstrap 5 CSS (bundled offline) -->
+  <link rel="stylesheet" href="css/bootstrap.min.css">
+  <!-- Bootstrap Icons (bundled offline) -->
+  <link rel="stylesheet" href="icons/bootstrap-icons.min.css">
+  <!-- Calculator styles -->
+  <link rel="stylesheet" href="css/calc.css">
+
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════
+     CLINIFY — CLINICAL CALCULATOR
+     Standalone version — runs without Django/server
+     File layout expected next to index.html:
+       css/bootstrap.min.css
+       icons/bootstrap-icons.min.css
+       icons/icon.svg  icon-192.png
+       static/js/bootstrap.bundle.min.js
+       static/js/math.js
+       static/js/calc.js
+       static/assets/fonts/Cairo-*.ttf
+       manifest.json   sw.js
+═══════════════════════════════════════════════════ -->
+
+<div class="offcanvas offcanvas-end" id="medCalc" tabindex="-1">
+
+  <!-- ── Header ── -->
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title">
+      <i class="bi bi-calculator-fill me-2"></i>CritCalc
+    </h5>
+    <!-- btn-close hidden via CSS in standalone mode -->
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+  </div>
+
+  <!-- ── Body ── -->
+  <div class="offcanvas-body">
+
+    <!-- Display card -->
+    <div class="calc-display-wrap border-dashed-primary">
+      <div id="calc-label">Ready</div>
+      <div id="calc-display">—</div>
+      <!-- Interpret strip (uses project border-dashed classes via JS) -->
+      <div class="calc-interpret" id="calc-interpret"></div>
+      <!-- Rich result cards -->
+      <div id="calc-ob-card"></div>
+      <div id="calc-ab-card"></div>
+      <div id="calc-vent-card"></div>
+      <div id="calc-drug-card"></div>
+      <div class="calc-display-footer">
+        <span id="calc-display-subtext"></span>
+        <button id="btn-copy-result">
+          <i class="bi bi-clipboard me-1" style="font-size:.65rem"></i>Copy
+        </button>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs">
+      <li class="nav-item">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-clinical">
+          <i class="bi bi-heart-pulse me-1" style="font-size:.75rem"></i>Clinical
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-scientific">
+          <i class="bi bi-cpu me-1" style="font-size:.75rem"></i>Scientific
+        </button>
+      </li>
+    </ul>
+
+    <div class="tab-content">
+
+      <!-- Clinical tab -->
+      <div class="tab-pane fade show active" id="tab-clinical">
+        <div class="calc-tab-body">
+          <div style="min-height:280px;display:flex;">
+            <!-- Sidebar (resizable) -->
+            <div class="formula-sidebar" id="formula-sidebar-col" style="width:115px;min-width:72px;max-width:220px;flex-shrink:0;">
+              <div id="formula-list" class="list-group list-group-flush"></div>
+            </div>
+            <!-- Drag handle -->
+            <div class="sidebar-resize-handle" id="sidebar-resize-handle" title="Drag to resize"></div>
+            <!-- Input panel -->
+            <div style="flex:1;min-width:0;">
+              <div class="formula-inputs-wrap">
+                <div id="formula-fields"></div>
+                <div class="d-flex gap-2 mt-2">
+                  <button class="btn btn-primary btn-sm flex-fill" id="btn-calc-formula">
+                    <i class="bi bi-lightning-charge-fill me-1"></i>Calculate
+                  </button>
+                  <button class="btn btn-sm btn-clear-fields" id="btn-clear-fields" title="Clear all fields">
+                    <i class="bi bi-x-circle me-1"></i>Clear
+                  </button>
+                </div>
+                <div id="formula-note" class="formula-note"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scientific tab -->
+      <div class="tab-pane fade" id="tab-scientific">
+        <div class="calc-tab-body sci-wrap">
+          <div class="sci-memory-bar" id="sci-memory-bar">M: —</div>
+          <div id="sci-expr-display"></div>
+          <div id="sci-display">0</div>
+
+          <div class="calc-grid">
+            <button class="calc-btn mem" data-sci="mc">MC</button>
+            <button class="calc-btn mem" data-sci="mr">MR</button>
+            <button class="calc-btn mem" data-sci="m+">M+</button>
+            <button class="calc-btn mem" data-sci="m-">M−</button>
+            <button class="calc-btn ctrl span2" id="calc-clear">C</button>
+            <button class="calc-btn ctrl span2" id="calc-back">⌫</button>
+            <button class="calc-btn" data-sci-val="7">7</button>
+            <button class="calc-btn" data-sci-val="8">8</button>
+            <button class="calc-btn" data-sci-val="9">9</button>
+            <button class="calc-btn op"  data-sci-val="/">÷</button>
+            <button class="calc-btn" data-sci-val="4">4</button>
+            <button class="calc-btn" data-sci-val="5">5</button>
+            <button class="calc-btn" data-sci-val="6">6</button>
+            <button class="calc-btn op"  data-sci-val="*">×</button>
+            <button class="calc-btn" data-sci-val="1">1</button>
+            <button class="calc-btn" data-sci-val="2">2</button>
+            <button class="calc-btn" data-sci-val="3">3</button>
+            <button class="calc-btn op"  data-sci-val="-">−</button>
+            <button class="calc-btn" data-sci-val="0">0</button>
+            <button class="calc-btn" data-sci-val=".">.</button>
+            <button class="calc-btn" data-sci-val="(">(</button>
+            <button class="calc-btn op"  data-sci-val="+">+</button>
+            <button class="calc-btn" data-sci-val=")">)</button>
+            <button class="calc-btn op"  data-sci-val="%">%</button>
+            <button class="calc-btn op"  data-sci-fn="sqrt">√</button>
+            <button class="calc-btn op"  data-sci-fn="sq">x²</button>
+            <button class="calc-btn op"  data-sci-val="^">^</button>
+            <button class="calc-btn op"  data-sci-fn="log10">log</button>
+            <button class="calc-btn op"  data-sci-fn="log">ln</button>
+            <button class="calc-btn eq"  id="calc-equals">=</button>
+          </div>
+          <p class="sci-hint">⌨ Keyboard supported · Powered by math.js</p>
+        </div>
+      </div>
+
+    </div><!-- /tab-content -->
+
+    <!-- History -->
+    <div class="calc-history-panel">
+      <div class="history-toggle-hdr" id="history-toggle">
+        <span><i class="bi bi-clock-history me-1"></i>History</span>
+        <span id="history-arrow">▸</span>
+      </div>
+      <div id="calc-history-list" style="display:none"></div>
+    </div>
+
+  </div><!-- /offcanvas-body -->
+</div><!-- /medCalc -->
+
+<!-- ═══ Scripts (all local / offline) ═══ -->
+<script src="static/js/bootstrap.bundle.min.js"></script>
+<script src="static/js/math.js"></script>
+<script src="static/js/calc.js"></script>
+<script>
+/* Sidebar drag-resize */
+(function() {
+  var handle = document.getElementById("sidebar-resize-handle");
+  var sidebar = document.getElementById("formula-sidebar-col");
+  if (!handle || !sidebar) return;
+  var dragging = false, startX = 0, startW = 0;
+  handle.addEventListener("mousedown", function(e) {
+    dragging = true; startX = e.clientX; startW = sidebar.offsetWidth;
+    handle.classList.add("dragging");
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    e.preventDefault();
+  });
+  document.addEventListener("mousemove", function(e) {
+    if (!dragging) return;
+    var w = Math.min(220, Math.max(72, startW + e.clientX - startX));
+    sidebar.style.width = w + "px";
+  });
+  document.addEventListener("mouseup", function() {
+    if (!dragging) return;
+    dragging = false; handle.classList.remove("dragging");
+    document.body.style.cursor = ""; document.body.style.userSelect = "";
+  });
+  handle.addEventListener("touchstart", function(e) {
+    dragging = true; startX = e.touches[0].clientX; startW = sidebar.offsetWidth;
+    handle.classList.add("dragging"); e.preventDefault();
+  }, { passive: false });
+  document.addEventListener("touchmove", function(e) {
+    if (!dragging) return;
+    var w = Math.min(220, Math.max(72, startW + e.touches[0].clientX - startX));
+    sidebar.style.width = w + "px";
+  }, { passive: true });
+  document.addEventListener("touchend", function() {
+    dragging = false; handle.classList.remove("dragging");
+  });
+})();
+</script>
+
+<script>
+  // Force offcanvas open as full-page block
+  document.addEventListener('DOMContentLoaded', function () {
+    var el = document.getElementById('medCalc');
+    if (el) {
+      el.classList.add('show');
+      el.style.visibility = 'visible';
+    }
+  });
+
+  // Register service worker for offline caching
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js')
+      .then(function () { console.log('CritCalc SW registered'); })
+      .catch(function (e) { console.warn('CritCalc SW failed:', e); });
+  }
+</script>
+</body>
+</html>
+
